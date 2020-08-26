@@ -7,7 +7,9 @@
 # Loading file as .csv
 getwd()   # check where you computer is using as default folder
 setwd("/Users/jbonilla/Documents") # to change current folder to ~/Documents
-data <-read.csv("Soups.csv")
+link<-"https://raw.githubusercontent.com/jcbonilla/MBA-RICE/master/Data/Soups.csv"
+data.file <-read.csv("Soups.csv")
+data<-read.csv(link,header=TRUE)
 str(data)
 
 #Let's do a prediction of progresso soup price as function of month, region, and income

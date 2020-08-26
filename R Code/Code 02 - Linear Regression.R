@@ -17,7 +17,7 @@ summary(progresso.model)  #to invoke a summary of the model
 plot(progresso.model)  #visual inspection of error term in the model
 
 #Now, let us introduce dummy variables.  We will need a package called `mlr`
-library(mlr)   #Go to "Install" or run install.packages("mlr") if Error in library(mlr) 
+library(mlr3)   #Go to "Install" or run install.packages("mlr") if Error in library(mlr) 
 
 #use createDummyFeatures to generate dummies for Factors or categorical variables
 data.dummy<-createDummyFeatures(data, cols = "Region")

@@ -7,14 +7,21 @@
 # Loading file as .csv
 getwd()   # check where you computer is using as default folder
 setwd("/Users/jbonilla/Documents") # to change current folder to ~/Documents
-link<-"https://raw.githubusercontent.com/jcbonilla/MBA-RICE/master/Data/Soups.csv"
+
+# reading from root directory
 data.file <-read.csv("Soups.csv")
-data<-read.csv(link,header=TRUE)
-str(data)
+link<-"https://raw.githubusercontent.com/jcbonilla/MBA-RICE/master/Data/Soups.csv"
+
+# reading from github
+data.url<-read.csv(link,header=TRUE)
+
+# explore data source
+str(data.url)
+names(data.url)
+View(data.url)
 
 #Let's do a prediction of progresso soup price as function of month, region, and income
-names(data)
-progresso.model<-lm(Price.Progresso~Month+Region+Low_Income+High_Income, data=data)
+progresso.model<-lm(Price.Progresso~Month+Region+Low_Income+High_Income, data=data.url)
 summary(progresso.model)  #to invoke a summary of the model
 plot(progresso.model)  #visual inspection of error term in the model
 

@@ -4,15 +4,13 @@
 ### 
 
 
-# Loading file as .csv
+# reading from root directory
 getwd()   # check where you computer is using as default folder
 setwd("/Users/jbonilla/Documents") # to change current folder to ~/Documents
-
-# reading from root directory
 data.file <-read.csv("Soups.csv")
-link<-"https://raw.githubusercontent.com/jcbonilla/MBA-RICE/master/Data/Soups.csv"
 
 # reading from github
+link<-"https://raw.githubusercontent.com/jcbonilla/MBA-RICE/master/Data/Soups.csv"
 data.url<-read.csv(link,header=TRUE)
 
 # explore data source

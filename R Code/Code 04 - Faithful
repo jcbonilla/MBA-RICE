@@ -1,0 +1,32 @@
+### Running Regression Models for Structural Changes
+### jb132@rice.edu
+
+#Use internal dataset in R called "faithful" 
+#which account for the Eruptions of Old Faithful in Yellowstone
+oldfaithful<-faithful
+str(faithful)
+plot(faithful)  #let's explore the data
+
+model.1<-lm(waiting~eruptions,data=faithful)
+summary(model.1)
+
+#let add model.1 to the scatter plot
+abline(model.1, col = "blue",lwd = 2, lty = "dashed")
+
+#Using visual inspection, let us split the faithful dataset 
+#into two using the function "subset()". Subset at 3.5 eruptions
+faithful.1<-subset(faithful, eruptions<=3)
+faithful.2<-subset(faithful, eruptions>3)
+model.2<-lm(waiting~eruptions,data=faithful.1)
+model.3<-lm(waiting~eruptions,data=faithful.2)
+summary(model.2)
+summary(model.3)
+abline(model.2, col = "green",lwd = 2, lty = "dashed")
+abline(model.3, col = "red",lwd = 2, lty = "dashed")
+
+sctest(faithful)
+library(strucchange)
+help(sctest)
+
+model.test<-sctest(waiting~eruptions,data=faithful, type = "Chow", point=3)
+model.test

@@ -24,7 +24,6 @@ summary(model.3)
 abline(model.2, col = "green",lwd = 2, lty = "dashed")
 abline(model.3, col = "red",lwd = 2, lty = "dashed")
 
-sctest(faithful)
 library(strucchange)
 help(sctest)
 

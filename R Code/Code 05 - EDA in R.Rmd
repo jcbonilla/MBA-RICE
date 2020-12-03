@@ -1,0 +1,312 @@
+---
+title: "R Notebook - MBA@RICE"
+output: html_notebook
+---
+### Questions and comments at Prof. JC Bonilla, jb132@rice.edu
+<p>&nbsp;</p>
+
+### EXAMPLE 1
+
+You are given rating data from Zagat which ranks restaurants in terms of 4 dimensions: price, décor, service, and food quality.  Using the *summary( )* function, complete the following analysis:
+<p>&nbsp;</p>
+
+Loading the Zagat.csv data source from Github and exploring it
+```{r}
+url<-"https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/zagat.CSV"
+data<-read.csv(url, header=TRUE,stringsAsFactors=FALSE)
+head(data)
+str(data)
+
+```
+<p>&nbsp;</p>
+
+**Compute summary statistics for price, décor, service, and food**
+```{r}
+summary(data[,2:5])   #[,2:5] limits the calculation to all rows and columns 2:5
+sapply(data[,2:5],sd)   #summary does not inclue standard dev. So include it!
+```
+
+From the analysis above we can observe that *price* has the most *variance* across restaurants whereas *service* and *food* quality are more similar in terms of spread. 
+
+<p>&nbsp;</p>
+**Segment all restaurants based on “above average” and “below average” ratings.**  
+
+**Naive Index.**
+First, let's us make a basic and equal proportions index
+
+```{r}
+food.naive=0.25
+decor.naive=0.25
+service.naive=0.25
+price.naive=0.25
+index= food.naive*data$Food+
+  decor.naive*data$Decor+
+  service.naive*data$Service+
+  price.naive*data$Price
+summary(index)
+hist(index, col="yellow")
+```
+
+From the above, *mean = 22.14* will the key for creating the two segments.    To do this, we need to add the new computed column *index* to the original data frame.  Will call this column *Score*.
+```{r}
+data$Score=index
+data.below=subset(data,Score<22.14)
+data.above=subset(data,Score>=22.14)
+
+summary(data$Score)
+summary(data.below$Score)
+summary(data.above$Score)
+sd(data.below$Score)
+sd(data$Score)
+sd(data.above$Score)
+```
+
+
+Now let's us explore this visually with a *boxplot()*
+```{r}
+boxplot(data$Score,data.below$Score, data.above$Score, names=c("ZAGAT", "BELOW","ABOVE"),col=c("yellow", "orange", "blue"),horizontal=TRUE,notch=TRUE)
+```
+
+As expected, the new segments behave as expected.  The segment *ABOVE* with lower variance and more similar standards for the 133 restaurants in this cohort.  For *BELOW*, we can observe 167 restaurants with a larger scoring variance.  This indicates variance in the restaurant pricing, service, decor, and food quality.
+
+
+<p>&nbsp;</p>
+**STATISTICAL INDEX.**
+Now let's us do a more comprehensive segmentation that account for the range in Zagat ratings.  To do this, we want to normalize each parameter in Zagat rating and assess its contribution.  Because we are interested in variance, we will normalize using standard deviation as follows:
+```{r}
+food.sd=sd(data$Food)
+decor.sd=sd(data$Decor)
+service.sd=sd(data$Service)
+price.sd=sd(data$Price)
+total.sd=food.sd+decor.sd+service.sd+price.sd
+food=food.sd/total.sd
+food
+decor=decor.sd/total.sd
+decor
+service=service.sd/total.sd
+service
+price=price.sd/total.sd
+price
+
+# new index using standard dev
+index.sd= food*data$Food+
+  decor*data$Decor+
+  service*data$Service+
+  price*data$Price
+summary(index.sd)
+```
+
+
+The revised segments will be set at *mean=27.82*, yield the following two cohorts:
+```{r}
+data$Score.sd=index.sd
+data.sd.below=subset(data,Score.sd<27.82)
+data.sd.above=subset(data,Score.sd>=27.82)
+```
+
+Comparing results, we have:
+```{r}
+boxplot(data$Score,data$Score.sd,horizontal = TRUE, notch = TRUE, names = c("Naive","Normalized"),col=c("red","orange"))
+
+par(mfrow=c(2,1))
+hist(data$Score, breaks=10, labels = TRUE, xlim = c(10,60), col = "red", main="Naive Score")
+hist(data$Score.sd, breaks=10, labels = TRUE, xlim = c(10,60), col = "orange", main="Normalized Score")
+```
+
+<p>&nbsp;</p>
+
+### EXAMPLE 2: Citibike
+Using the dataset below, compute the following analytics:
+
+**Compute summary statistics for tripduration**
+```{r}
+url="https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/JC-201709-citibike-tripdata.csv"
+citibike=read.csv(url,
+                  header = TRUE,
+                  stringsAsFactors = TRUE)  # string as factor is useful when having categorical data
+
+head(citibike)
+str(citibike)
+summary(citibike$tripduration)
+sd(citibike$tripduration)
+boxplot(citibike$tripduration,col="blue", horizontal = TRUE, notch = TRUE, outline = FALSE)
+```
+From the summary statistics, we can observe lots of variation.  With the visualizaion we can validate the presene of outliers in this dataset. 
+<p>&nbsp;</p>
+
+**Compute summary statistics for age**
+When exploring birth.year, we need can see the following
+```{r}
+str(citibike$birth.year)
+```
+So we are going to transform into age as of 2020 and add it to column *age*
+```{r}
+citibike$age=as.numeric(citibike$birth.year)
+summary(citibike$age)
+sd(citibike$age)
+boxplot(citibike$age,col="orange", horizontal = TRUE, notch = TRUE)
+hist(citibike$age, col = "orange", breaks = 100)
+```
+
+<p>&nbsp;</p>
+**Compute summary statistics for tripduration in minutes (Need to transform tripduration from seconds to minutes)**
+Similarly to age, let's add a new column called *tripdurationMin* with the transformation
+```{r}
+citibike$tripdurationMin=citibike$tripduration/60
+summary(citibike$tripdurationMin)
+sd(citibike$tripdurationMin)
+boxplot(citibike$tripdurationMin,col="blue", horizontal = TRUE, notch = TRUE)
+boxplot(citibike$tripdurationMin,col="blue", horizontal = TRUE, notch = TRUE,outline = FALSE) # visualize without outliers
+```
+
+<p>&nbsp;</p>
+**Compute the correlation between age and tripduration** 
+```{r}
+cor(citibike$age,citibike$tripdurationMin)
+names(citibike)
+citibike.cor=cor(citibike[,15:17])
+
+library(corrplot)
+corrplot(citibike.cor, method="color",type = "lower", addCoef.col = "black")
+```
+There is a week correlation between trip duraction and age
+<p>&nbsp;</p>
+
+####Business Questions:
+**What is the total revenue assuming all users riding bikes from 0 to 45 minutes pay $3 per ride and user exceeding 45 minutes pay an additional $2 per ride.**
+Using the function *table()* we can get a count of *TRUE* vs *FALSE* that match the condition *citibike$tripdurationMin>45*.  From there, we only need to multiple by $3 and $5 respectively and sum up the results.  All these can be accomplish using one line of code:
+```{r}
+sum(table(citibike$tripdurationMin>45)*c(3,5))
+```
+<p>&nbsp;</p>
+
+**Looking at tripduration in minutes, what can you say about the variance in the data.**
+```{r}
+sd(citibike$tripdurationMin)
+boxplot(citibike$tripdurationMin, horizontal = TRUE, col = "blue")
+cutoff=mean(citibike$tripdurationMin)+sd(citibike$tripdurationMin)
+```
+We can observe lots of variability.  Let's isolate the trips that occur 1 standard deviation from the mean and computer summary statistics and count how many trips fall under this cutoff
+```{r}
+citibike.sd1=subset(citibike,tripdurationMin>=cutoff)
+summary(citibike.sd1$tripdurationMin)
+nrow(citibike.sd1)
+```
+
+<p>&nbsp;</p>
+
+**What does this mean for the pricing strategy?**
+Let us compute the proportion of users that go over 45min by using the function *prop.table()*
+```{r}
+prop.table(table(citibike$tripdurationMin>=45))
+```
+If the company wants to generate more revenue from penalty fees, it should move the threshold lower. This strategy then only addresses 2% of the ridership.  As such, it is not inclusive and may need rethinking.
+<p>&nbsp;</p>
+
+**What does this mean for inventory availability?**
+The issue here is that lack of inventory translates to low number of bikes available for new customers. This may have side expects in customer experience and membership churn. As such, strategies like this could create incentives for returning bikes earlier.
+**Please note, there can be different interpretations. It is an open ended question
+
+<p>&nbsp;</p>
+
+
+###  EXAMPLE 3: Chesemakers.
+
+Using the Cheesemakers dataset, answer the following questions:
+<p>&nbsp;</p>
+
+**Compute the summary statistics for gross profit in cheese? What does this mean to you?**
+```{r}
+cheese=read.csv("https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/Cheesemakers_v2.csv", header = TRUE, stringsAsFactors = TRUE)
+head(cheese)
+str(cheese)
+summary(cheese$Gross.profit)
+sd(cheese$Gross.profit)
+```
+The maximum value in gross profit is 4470, which is signifcantly away from 4 standard deviations.  As such, there are outliers and anomalies in this dataset.
+<p>&nbsp;</p>
+
+
+**Plot a histogram and a box plot of gross profits.  Explain them in English?  What do you see?  What is normal/abnormal?**
+```{r}
+par(mfrow=c(1,3))  # to have 2 plots side by side
+hist(cheese$Gross.profit, breaks=1000,xlim = c(0,100) , col="blue")
+boxplot(cheese$Gross.profit, horizontal = TRUE, notch = TRUE, col = "blue")
+boxplot(cheese$Gross.profit, horizontal = TRUE, notch = TRUE, col = "blue", outline = F)
+```
+
+After changing the range of x in histogram, most data of gross profits lie in [5,10]. Since the data is bell-shaped, it is normal. After removing the outliers in boxplot, the gross profits fall in the range of [0,35] and the majority of data fall in [10,18]. The median of gross profit in the boxplot is about 10.
+<p>&nbsp;</p>
+
+*Using the CustomerID column, identify the number of customer who have done recurring purchases.*
+
+* What is the average number of purchases of the recurring clients?
+```{r}
+customer.aggregate=aggregate(cheese$Sale.amount, by=list(cheese$Customer.ID),length)
+customer.aggregate
+customer.single=subset(customer.aggregate,x<=1)
+customer.recurring=subset(customer.aggregate,x>1)
+nrow(customer.single)
+nrow(customer.recurring)
+mean(customer.recurring$x)
+```
+A total 26,169 customers are recurring and they the average purchase is 2.8 
+<p>&nbsp;</p>
+* What is the average spent by recurring clients?
+```{r}
+cheese.recurring=subset(cheese, cheese$Customer.ID %in% customer.recurring$Group.1)  
+#%in% operator in R, is used to identify if an element belongs to a vector or Dataframe. Here we want to use the %in% operator to return the customers in the cheese dataframe that have a match in the Group.1 in customer.recurring
+customer.spend=aggregate(cheese.recurring$Sale.amount,by=list(cheese.recurring$Customer.ID),sum)
+mean(customer.spend$x)
+```
+<p>&nbsp;</p>
+* What is the variance in gross profits between recurring clients vs clients who buy 1 cheese?
+```{r}
+cheese.nonrecurring=subset(cheese, !cheese$Customer.ID %in% customer.recurring$Group.1)  
+cheese.2=subset(cheese, cheese$Customer.ID %in% customer.recurring$Group.1)  
+var(cheese.recurring$Gross.profit)
+var(cheese.nonrecurring$Gross.profit)
+```
+<p>&nbsp;</p>
+* Which are the most profitable clients?
+```{r}
+subset(cheese, cheese$Gross.profit>=max(cheese$Gross.profit))
+customer.profit=aggregate(cheese.2$Gross.profit, by=list(cheese.2$Customer.ID),sum)
+subset(customer.profit, customer.profit$x>=max(customer.profit$x))
+```
+Customer ID *47890* is the most profitable with $4,470 in a single transaction. In terms of recurring, customer ID *47911* with profit $18,968 is the most profitable client for all purchases.
+<p>&nbsp;</p>
+
+**How many clients are paying more than 2 standard deviations of the mean price? What does that mean in english?**
+```{r}
+price.mean=mean(cheese$Sale.amount)
+price.sd=sd(cheese$Sale.amount)
+cheese.2sd=subset(cheese, cheese$Sale.amount>=2*price.sd+price.mean)
+nrow(cheese.2sd)
+```
+There are 1141 clients paying more than 2 standard deviations of the mean price, which is $561.35. They are the small group who are willing to pay extremely high price. However, this segment is limited and represents 1.2% of the total transactions.  As such, they won’t be the main target of the cheesemakers company.
+<p>&nbsp;</p>
+
+
+**Compute number of unique clients per state**
+```{r}
+unique.clients=aggregate(cheese$Number.of.Records,by=list(cheese$Customer.ID,cheese$State),length)
+state.aggregation=aggregate(unique.clients$x,by=list(unique.clients$Group.2),sum)
+barplot(state.aggregation$x, names.arg = state.aggregation$Group.1)
+```
+<p>&nbsp;</p>
+Normalize the data using min-max scaling
+```{r}
+state.aggregation$MinMax=(state.aggregation$x-min(state.aggregation$x))/(max(state.aggregation$x)-min(state.aggregation$x))
+barplot(state.aggregation$MinMax, names.arg = state.aggregation$Group.1, col="blue")
+```
+<p>&nbsp;</p>
+Is there an association (correlation) between client volume and sales?
+```{r}
+client.volume=aggregate(cheese[c("Number.of.Records","Sale.amount")],by=list(cheese$State),sum)
+cor(client.volume$Number.of.Records,client.volume$Sale.amount)
+```
+
+  
+
+

@@ -1,0 +1,140 @@
+### Data Analytics - MBA@RICE
+### Author: JC Bonilla
+### jb132@rice.edu
+
+
+
+##FILE - CHEESE SALES##
+url="https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/Cheesemakers_v2.csv"
+cheese=read.csv(url, header = TRUE, stringsAsFactors = TRUE)
+
+##PACKAGES##
+install.packages("dplyr","dataQualityR","ggplot2", "corrplot")
+library(corrplot)
+library(dplyr)
+library(dataQualityR)
+setwd("~/Downloads")
+
+
+
+##DF DATA INSPECTION##
+str(cheese)
+glimpse(cheese)
+
+
+checkDataQuality(data = cheese, 
+                 out.file.num ="cheese_num.csv", 
+                 out.file.cat= "cheese_cat.csv")   #filename for report
+cheese_num<-read.csv("~/Downloads/cheese_num.csv")
+cheese_cat<-read.csv("~/Downloads/cheese_cat.csv")
+View(cheese_num)   
+View(cheese_cat)
+
+summary(cheese)
+boxplot(cheese)
+
+##DATA CLEANING##
+names(cheese)
+cheese.clean=select(cheese,
+                    Contact.method,
+                    Customer.ID,
+                    Date,
+                    State,
+                    Product=Item.name,
+                    Profit=Gross.profit ,
+                    Price=Sale.amount,
+                    Goal=Sales.target)
+
+cheese.clean$Customer.ID=as.factor(cheese.clean$Customer.ID)
+cheese.clean$Date=as.Date(cheese.clean$Date,"%m/%d/%y")  #see help for date formats
+
+summary(cheese.clean)  
+View(cheese.clean)
+
+
+##VISUALIZATION##
+par(mfrow=c(1,3))  # to have 3 plots side by side
+hist(cheese.clean$Profit, breaks=1000,xlim = c(0,100) , col="blue")
+boxplot(cheese.clean$Profit, horizontal = TRUE, notch = TRUE, col = "blue")
+boxplot(cheese.clean$Profit, horizontal = TRUE, notch = TRUE, col = "blue", outline = F)
+
+
+##AGGREGATIONS##
+
+#Rank sales by State?
+State.Aggregation=aggregate(x = cheese.clean,
+                            by = list(cheese.clean$State),
+                            FUN = mean)
+State.Aggregation=select(State.Aggregation, State=Group.1, Profit, Price, Goal)
+par(mfrow=c(1,1))
+barplot(State.Aggregation$Profit, names.arg = State.Aggregation$State)
+State.Aggregation.1=State.Aggregation[order(State.Aggregation$Profit),]
+barplot(State.Aggregation.1$Profit, names.arg = State.Aggregation.1$State)
+barplot(State.Aggregation.1$Profit, names.arg = State.Aggregation.1$State, horiz = T)
+
+#What is the average number of purchases for recurring clients?
+customer.aggregate=aggregate(cheese.clean$Price, by=list(cheese.clean$Customer.ID),length)
+customer.aggregate
+customer.single=subset(customer.aggregate,x<=1)
+customer.recurring=subset(customer.aggregate,x>1)
+nrow(customer.single)
+nrow(customer.recurring)
+mean(customer.recurring$x)
+
+
+
+
+#What is the average price paid by recurring clients?
+cheese.recurring=subset(cheese.clean, cheese.clean$Customer.ID %in% customer.recurring$Group.1)
+              #%in% operator in R, is used to identify if an element belongs to a vector or Dataframe. 
+              #use the %in% operator to return the customers in the cheese dataframe that have a match 
+              #in the customer.recurring&Group.1
+
+customer.spend=aggregate(cheese.recurring$Price,by=list(cheese.recurring$Customer.ID),sum)
+mean(customer.spend$x)
+
+
+#What is the variance in profit between recurring  vs clients who buy 1 cheese?
+cheese.nonrecurring=subset(cheese.clean, !cheese.clean$Customer.ID %in% customer.recurring$Group.1)  
+cheese.2=subset(cheese.clean, cheese.clean$Customer.ID %in% customer.recurring$Group.1)  
+var(cheese.recurring$Profit)
+var(cheese.nonrecurring$Profit)
+boxplot(cheese.recurring$Profit,cheese.nonrecurring$Profit, horizontal = T, notch = T, outline = F)
+
+
+#Which are the most profitable clients?
+subset(cheese.clean, cheese.clean$Profit>=max(cheese.clean$Profit))
+customer.profit=aggregate(cheese.clean$Profit, by=list(cheese.clean$Customer.ID),sum)
+subset(customer.profit, customer.profit$x>=max(customer.profit$x))
+
+
+#many clients are paying more than 2 standard deviations of the mean price? What does that mean in english?
+price.mean=mean(cheese.clean$Price)
+price.sd=sd(cheese.clean$Price)
+cheese.2sd=subset(cheese.clean, cheese.clean$Price>=2*price.sd+price.mean)
+nrow(cheese.2sd)
+(nrow(cheese.2sd)/nrow(cheese.clean))*100
+
+  
+# CORRELATIONAL ANALYSIS
+#Is there an association (correlation) between client volume and Profit?
+client.volume=aggregate(cheese[c("Number.of.Records","Sale.amount")],by=list(cheese$State),sum)
+cor(client.volume$Number.of.Records,client.volume$Sale.amount)
+names(cheese.clean)
+
+cheese.cor=cor(cheese.clean[,6:8])
+corrplot(cheese.cor)
+
+corrplot(cheese.cor,type="lower")
+corrplot(cheese.cor,type="lower", addCoef.col = "white")
+corrplot(cheese.cor,type="lower", addCoef.col = "white", tl.srt=45)
+corrplot(cheese.cor,type="lower", addCoef.col = "white", tl.srt=45, method = "color")
+
+
+# More on EDA
+https://r4ds.had.co.nz/exploratory-data-analysis.html
+https://towardsdatascience.com/exploratory-data-analysis-in-r-for-beginners-fe031add7072
+
+
+
+
